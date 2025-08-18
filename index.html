@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -307,8 +306,16 @@
                 connectBtn.addEventListener('click', () => {
                     const userName = document.getElementById('userName').value.trim();
                     const pin = document.getElementById('roomPin').value.trim();
-                    if (!userName || !pin) {
-                        this.showNotification('নাম এবং PIN দুটোই প্রয়োজন', 'error');
+                    if (!userName) {
+                        this.showNotification('দয়া করে আপনার নাম লিখুন', 'error');
+                        return;
+                    }
+                    if (!pin) {
+                        this.showNotification('দয়া করে PIN লিখুন', 'error');
+                        return;
+                    }
+                    if (pin.length !== 6) {
+                        this.showNotification('PIN অবশ্যই 6 ডিজিটের হতে হবে', 'error');
                         return;
                     }
                     this.joinRoom(userName, pin);
@@ -318,24 +325,49 @@
             createRoom(userName) {
                 this.roomPin = this.generatePin();
                 this.userName = userName;
+                
+                // Create initial room data
+                const roomData = {
+                    users: {},
+                    drawings: [],
+                    created: Date.now(),
+                    createdBy: userName
+                };
+                
+                this.saveRoomData(this.roomPin, roomData);
                 this.initializeRoom();
                 this.hideConnectionModal();
                 this.showNotification(`রুম তৈরি হয়েছে! PIN: ${this.roomPin}`, 'success');
             }
 
             joinRoom(userName, pin) {
-                // Check if room exists (simulate)
-                const roomData = this.getRoomData(pin);
-                if (roomData) {
-                    this.roomPin = pin;
-                    this.userName = userName;
-                    this.loadRoomData(roomData);
-                    this.initializeRoom();
-                    this.hideConnectionModal();
-                    this.showNotification(`রুমে সফলভাবে জয়েন হয়েছে!`, 'success');
-                } else {
-                    this.showNotification('এই PIN এর কোন রুম পাওয়া যায়নি', 'error');
+                // Check if PIN format is correct
+                if (pin.length !== 6 || !/^\d+$/.test(pin)) {
+                    this.showNotification('PIN অবশ্যই 6 ডিজিটের হতে হবে', 'error');
+                    return;
                 }
+
+                // For demo purposes, allow any 6-digit PIN to work
+                // In real implementation, you would check server for existing rooms
+                this.roomPin = pin;
+                this.userName = userName;
+                
+                // Try to get existing room data, if not exists create empty room
+                let roomData = this.getRoomData(pin);
+                if (!roomData) {
+                    // Create new room data structure
+                    roomData = {
+                        users: {},
+                        drawings: [],
+                        created: Date.now()
+                    };
+                    this.saveRoomData(pin, roomData);
+                }
+                
+                this.loadRoomData(roomData);
+                this.initializeRoom();
+                this.hideConnectionModal();
+                this.showNotification(`রুমে সফলভাবে জয়েন হয়েছে! PIN: ${pin}`, 'success');
             }
 
             initializeRoom() {
@@ -396,6 +428,7 @@
                 newDrawings.forEach(drawing => {
                     if (drawing.userId !== this.userId) {
                         this.executeDrawing(drawing);
+                        this.drawingData.push(drawing); // Add to our local data
                     }
                 });
             }
@@ -465,12 +498,25 @@
                 return data ? JSON.parse(data) : null;
             }
 
+            saveRoomData(pin, data) {
+                const roomKey = `room_${pin}`;
+                localStorage.setItem(roomKey, JSON.stringify(data));
+            }
+
             loadRoomData(roomData) {
-                // Load existing drawings
+                // Clear current canvas first
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Load existing drawings if any
                 if (roomData.drawings && roomData.drawings.length > 0) {
                     roomData.drawings.forEach(drawing => {
                         this.executeDrawing(drawing);
                     });
+                    // Update our local drawing data
+                    this.drawingData = [...roomData.drawings];
+                    this.lastSyncTime = this.drawingData.length;
                 }
             }
 
