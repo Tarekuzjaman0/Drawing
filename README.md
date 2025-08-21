@@ -31,4 +31,4 @@
 
 1. রিপোজিটরি ক্লোন করুন:
 ```bash
-[git clone <repository-url>](https://github.com/Tarekuzjaman0/Drawing.git)
+https://github.com/Tarekuzjaman0/Drawing.git
