@@ -719,6 +719,9 @@
         });
 
         // Handle page unload - cleanup
+                // Handle page unload - cleanup
+
+        
         window.addEventListener('beforeunload', () => {
             if (app && app.syncInterval) {
                 clearInterval(app.syncInterval);
